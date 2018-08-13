@@ -19,3 +19,14 @@ So after being fed up with the point of sales system at my night job (as a resta
 - Basic C# event handlers
 - Basic C# file IO
 - Windows Event Logger
+
+## How It Works
+- For the printer of interest, find it in Control Panel, right click it, select "Printer Properties", click the "Advanced" tab, do whatever it takes to check "Keep Printed Documents", click apply
+- Now every document that is sent to the printer is spooled in C:/Windows/System32/spool/PRINTERS
+- This service monitors that directory for .SHD (printer header files) and .SPD files (document data for printers to print)
+- Every time the directory is written to, FileSystemWatcher triggers an event
+- On the event trigger, a snapshot of the directory is taken and all files in the directory are queued
+- A new thread is created that will handle one file in the queue at a time
+- If a file is a .SHD file, this service just deletes it and moves on
+- If a file is a .SPD file, this service uploads it to Firebase
+- All other filetypes are ignored
