@@ -148,7 +148,7 @@ namespace TLKAC_Printer_Upload_Service
                 {
                     var task = new Firebase.Storage.FirebaseStorage("tlkac-api.appspot.com")
                         .Child("printerOutput")
-                        .Child(DateTime.Now.DayOfWeek.ToString())
+                        .Child(DateTime.Now.ToString("yyyy/MM/dd"))
                         .Child(info.Name)
                         .PutAsync(file);
                     var whenThisDownloadURLIsFilledInItIsDoneUploading = await task;
