@@ -74,7 +74,6 @@ namespace TLKAC_Printer_Upload_Service
                     SetBusy(false);
                     return;
                 }
-
                 new Thread(async () =>
                 {
                     FileStream currentFile = null;
@@ -88,6 +87,7 @@ namespace TLKAC_Printer_Upload_Service
                         while (currentFile == null && attemptCount < attemptLimit)
                         {
                             attemptCount += 1;
+                            Thread.Sleep(1000); //Wait a sec because if not, then this program'll sometimes delete the data before it can actually make it to the printer
                             currentFile = TryToOpen(files.First.Value.FullName);
                             if (currentFile == null)
                             {
