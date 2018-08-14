@@ -24,9 +24,9 @@ namespace TLKAC_Printer_Upload_Service
             InitializeComponent();
         }
 
-        public void OnDebug(string[] args)
+        public void OnDebug()
         {
-            OnStart(args);
+            OnStart(null);
         }
 
         public static void LogEvent(string message)
@@ -40,14 +40,11 @@ namespace TLKAC_Printer_Upload_Service
 
         protected override void OnStart(string[] args)
         {
-            //Make sure there are three things before continuing
-            if (args.Length != 3)
-            {
-                LogEvent("Not enough arguments to start properly.");
-                return;
-            }
+            //Grab those creds
+            var creds = CredentialsManager.GetCreds();
+
             //Start up Firebase service
-            svc = new SVCFirebase(args[0], args[1], args[2]);
+            svc = new SVCFirebase(creds.Key, creds.Email, creds.Password);
 
             //Initialize the folder watcher
             folderWatcher = new FileSystemWatcher(printerOutputFolderPath)
