@@ -159,7 +159,16 @@ namespace TLKAC_Printer_Upload_Service
 
             if (info.Extension == ".SPL")
             {
-                shouldDelete = await svc.UploadAsync(file, info);
+                var ticketInfo = TicketParser.Parse(file, info);
+                try
+                {
+                    file = File.Open(info.FullName, FileMode.Open);
+                }
+                catch (Exception e)
+                {
+                    LogEvent("ProcessAsync could not reopen file because: " + e.Message);
+                }
+                shouldDelete = await svc.UploadAsync(file, info, rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL");
             }
             if (info.Extension == ".SHD")
             {
