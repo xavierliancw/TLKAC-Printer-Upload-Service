@@ -10,8 +10,16 @@ namespace TLKAC_Printer_Upload_Service
         static void Main()
         {
 #if DEBUG
+            //Lol I hope I never push the actual values to source control
+            var args = new string[]
+            {
+                "",
+                "",
+                ""
+            };
+
             Service1 debugSvcInstance = new Service1();
-            debugSvcInstance.OnDebug();
+            debugSvcInstance.OnDebug(args);
             System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
 #else
             ServiceBase[] ServicesToRun;

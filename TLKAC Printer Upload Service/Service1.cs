@@ -17,19 +17,38 @@ namespace TLKAC_Printer_Upload_Service
         private bool isBusyProcessingBatch = false;
         private Object thisLock = new Object();
         private LinkedList<FileInfo> files = null;
+        private SVCFirebase svc = null;
 
         public Service1()
         {
             InitializeComponent();
         }
 
-        public void OnDebug()
+        public void OnDebug(string[] args)
         {
-            OnStart(null);
+            OnStart(args);
+        }
+
+        public static void LogEvent(string message)
+        {
+            string eventSource = "TLKAC File Upload Service";
+            DateTime dt = new DateTime();
+            dt = DateTime.UtcNow;
+            message = dt.ToLocalTime() + ": " + message;
+            EventLog.WriteEntry(eventSource, message);
         }
 
         protected override void OnStart(string[] args)
         {
+            //Make sure there are three things before continuing
+            if (args.Length != 3)
+            {
+                LogEvent("Not enough arguments to start properly.");
+                return;
+            }
+            //Start up Firebase service
+            svc = new SVCFirebase(args[0], args[1], args[2]);
+
             //Initialize the folder watcher
             folderWatcher = new FileSystemWatcher(printerOutputFolderPath)
             {
@@ -46,8 +65,11 @@ namespace TLKAC_Printer_Upload_Service
         protected override void OnStop()
         {
             //Clean up
-            folderWatcher.EnableRaisingEvents = false;
-            folderWatcher.Dispose();
+            if (folderWatcher != null)
+            {
+                folderWatcher.EnableRaisingEvents = false;
+                folderWatcher.Dispose();
+            }
         }
 
         private void OnChangedEvent(object sender, FileSystemEventArgs e)
@@ -60,14 +82,7 @@ namespace TLKAC_Printer_Upload_Service
                 var dirInfo = new DirectoryInfo(printerOutputFolderPath);
                 var fileAr = dirInfo.GetFiles().ToArray();
                 files = new LinkedList<FileInfo>(fileAr);
-
-                LogEvent("Directory start");
-                foreach (var inf in files)
-                {
-                    LogEvent(inf.FullName);
-                }
-                LogEvent("Directory end");
-
+                
                 //If there's nothing in the directory, just stop
                 if (files.Count == 0)
                 {
@@ -96,7 +111,7 @@ namespace TLKAC_Printer_Upload_Service
                         }
                         attemptCount = 0;   //Reset this immediately since the while loop is done with it
 
-                        if (currentFile != null)
+                        if (currentFile != null && files.First.Value != null)
                         {
                             await ProcessAsync(currentFile, files.First.Value);
                         }
@@ -137,29 +152,28 @@ namespace TLKAC_Printer_Upload_Service
 
         private async Task ProcessAsync(FileStream file, FileInfo info)
         {
-            if (info.Extension == ".SHD")
+            //Only process .SHD and .SPL files
+            if (info.Extension != ".SHD" && info.Extension != ".SPL")
             {
-                LogEvent("Gonna delete " + info.FullName);
+                file.Close();
+                return;
             }
+            var shouldDelete = false;
+
             if (info.Extension == ".SPL")
             {
-                LogEvent("Gonna upload " + info.FullName);
-                try
-                {
-                    var task = new Firebase.Storage.FirebaseStorage("tlkac-api.appspot.com")
-                        .Child("printerOutput")
-                        .Child(DateTime.Now.ToString("yyyy/MM/dd"))
-                        .Child(info.Name)
-                        .PutAsync(file);
-                    var whenThisDownloadURLIsFilledInItIsDoneUploading = await task;
-                }
-                catch (Exception e)
-                {
-                    LogEvent("Upload failed: " + e.Message);
-                }
+                shouldDelete = await svc.UploadAsync(file, info);
+            }
+            if (info.Extension == ".SHD")
+            {
+                shouldDelete = true;
             }
             file.Close();
-            File.Delete(info.FullName);
+
+            if (shouldDelete)
+            {
+                File.Delete(info.FullName);
+            }
         }
 
         private bool IsBusy()
@@ -188,17 +202,6 @@ namespace TLKAC_Printer_Upload_Service
             {
                 return null;
             }
-        }
-
-        private void LogEvent(string message)
-        {
-#if DEBUG
-            string eventSource = "File Monitor Service";
-            DateTime dt = new DateTime();
-            dt = DateTime.UtcNow;
-            message = dt.ToLocalTime() + ": " + message;
-            EventLog.WriteEntry(eventSource, message);
-#endif
         }
     }
 }
