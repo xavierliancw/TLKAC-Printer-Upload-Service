@@ -123,7 +123,10 @@ namespace TLKAC_Printer_Upload_Service
                     if (leftoverFiles.Count != 0)
                     {
                         Thread.Sleep(1000);
-                        OnChangedEvent(null, null);
+                        if (SVCFirebase.ThereIsInternet())  //Oh, but don't keep retrying if there's no internet
+                        {
+                            OnChangedEvent(null, null);
+                        }
                     }
                 }).Start();
             }
@@ -168,7 +171,15 @@ namespace TLKAC_Printer_Upload_Service
                 {
                     LogEvent("ProcessAsync could not reopen file because: " + e.Message);
                 }
-                shouldDelete = await svc.UploadAsync(file, info, rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL");
+                if (ticketInfo != null)
+                {
+                    shouldDelete = await svc.UploadAsync(file, info, rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL");
+                }
+                else
+                {
+                    //This is an error case, but I still want to see the file get uploaded
+                    shouldDelete = await svc.UploadAsync(file, info, rename: Guid.NewGuid() + ".txt");  //At this point it had to be either a .SHD or .SPL file... Sometimes .SHDs get converted to .SPLs and I don't know why. (That kills the ticket parser)
+                }
             }
             if (info.Extension == ".SHD")
             {

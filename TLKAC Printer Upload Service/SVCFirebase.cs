@@ -32,7 +32,23 @@ namespace TLKAC_Printer_Upload_Service
             new Thread(async () =>
             {
                 await AuthenticateAsync();
-            }).Start(); 
+            }).Start();
+        }
+
+        public static bool ThereIsInternet()
+        {
+            try
+            {
+                using (var client = new System.Net.WebClient())
+                using (client.OpenRead("http://clients3.google.com/generate_204"))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<bool> UploadAsync(FileStream file, FileInfo info, string rename = null, bool reauthRetry = false)
@@ -43,7 +59,15 @@ namespace TLKAC_Printer_Upload_Service
             }
             if (fbRef == null)
             {
-                return false;   //If not first-time authenticated yet, don't do anything
+                await AuthenticateAsync();
+                if (fbRef == null)
+                {
+                    return false;   //If still not authenticated yet, don't do anything
+                }
+            }
+            if (!ThereIsInternet())
+            {
+                return false;   //Don't even try if there's no internet
             }
             try
             {
@@ -78,6 +102,11 @@ namespace TLKAC_Printer_Upload_Service
 
         private async Task AuthenticateAsync()
         {
+            //Can't auth if there's no internet
+            if (!ThereIsInternet())
+            {
+                return;
+            }
             SetBusy(true);
             token = await auth.SignInWithEmailAndPasswordAsync(credEmail, credPass);
             fbRefOptions = new FirebaseStorageOptions
