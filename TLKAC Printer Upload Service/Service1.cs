@@ -178,7 +178,9 @@ namespace TLKAC_Printer_Upload_Service
                 else
                 {
                     //This is an error case, but I still want to see the file get uploaded
-                    shouldDelete = await svc.UploadAsync(file, info, rename: Guid.NewGuid() + ".txt");  //At this point it had to be either a .SHD or .SPL file... Sometimes .SHDs get converted to .SPLs and I don't know why. (That kills the ticket parser)
+                    var guidTitle = Guid.NewGuid();
+                    shouldDelete = await svc.UploadAsync(file, info, rename: guidTitle + ".txt");  //At this point it had to be either a .SHD or .SPL file... Sometimes .SHDs get converted to .SPLs and I don't know why. (That kills the ticket parser)
+                    LogEvent("Null ticket info for " + info.Name + ", uploaded as " + guidTitle + ".txt");
                 }
             }
             if (info.Extension == ".SHD")
