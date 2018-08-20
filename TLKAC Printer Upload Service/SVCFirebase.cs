@@ -51,7 +51,8 @@ namespace TLKAC_Printer_Upload_Service
             }
         }
 
-        public async Task<bool> UploadAsync(FileStream file, FileInfo info, string rename = null, bool reauthRetry = false)
+        public async Task<bool> UploadAsync(FileStream file, FileInfo info, string rename = null,
+            string directory = "", bool reauthRetry = false)
         {
             if (IsBusy())
             {
@@ -76,9 +77,13 @@ namespace TLKAC_Printer_Upload_Service
                 {
                     fileName = rename;
                 }
+                //Use the ticket's date if possible
+                var dirLocation = directory != ""
+                    ? directory
+                    : DateTime.Now.ToString("yyyy/MM/dd");
                 var uploadTask = fbRef
                     .Child("printerOutput")
-                    .Child(DateTime.Now.ToString("yyyy/MM/dd"))
+                    .Child(dirLocation)
                     .Child(fileName)
                     .PutAsync(file);
                 var result = await uploadTask;
@@ -90,7 +95,7 @@ namespace TLKAC_Printer_Upload_Service
                 {
                     Service1.LogEvent("Reauthenticating");
                     await AuthenticateAsync();
-                    return await UploadAsync(file, info, rename, true);
+                    return await UploadAsync(file, info, rename, directory, true);
                 }
                 else
                 {

@@ -162,9 +162,11 @@ namespace TLKAC_Printer_Upload_Service
 
             if (info.Extension == ".SPL")
             {
-                var ticketInfo = TicketParser.Parse(file, info);
+                Ticket ticketInfo = null;
                 try
                 {
+                    file.Close();
+                    ticketInfo = TicketParser.Parse(file, info);
                     file = File.Open(info.FullName, FileMode.Open);
                 }
                 catch (Exception e)
@@ -173,7 +175,16 @@ namespace TLKAC_Printer_Upload_Service
                 }
                 if (ticketInfo != null)
                 {
-                    shouldDelete = await svc.UploadAsync(file, info, rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL");
+                    //Try to get the date to tell Firebase exactly where to upload the file
+                    var uploadDirectory = "";
+                    if (ticketInfo.Timestamp.HasValue)
+                    {
+                        var ticketTime = (DateTime)ticketInfo.Timestamp;
+                        uploadDirectory = ticketTime.ToString("yyyy/MM/dd");
+                    }
+                    shouldDelete = await svc.UploadAsync(file, info,
+                        rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL",
+                        directory: uploadDirectory);
                 }
                 else
                 {
