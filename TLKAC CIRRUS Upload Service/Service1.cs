@@ -8,16 +8,17 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 
-namespace TLKAC_Printer_Upload_Service
+namespace TLKAC_CIRRUS_Upload_Service
 {
     public partial class Service1 : ServiceBase
     {
         private const string printerOutputFolderPath = "C:\\Windows\\System32\\spool\\PRINTERS\\";
         private FileSystemWatcher folderWatcher = null;
         private bool isBusyProcessingBatch = false;
-        private Object thisLock = new Object();
+        private object thisLock = new object();
         private LinkedList<FileInfo> files = null;
         private SVCFirebase svc = null;
+        private string currentAccount = null;
 
         public Service1()
         {
@@ -42,6 +43,7 @@ namespace TLKAC_Printer_Upload_Service
         {
             //Grab those creds
             var creds = CredentialsManager.GetCreds();
+            currentAccount = creds.Email;
 
             //Start up Firebase service
             svc = new SVCFirebase(creds.Key, creds.Email, creds.Password);

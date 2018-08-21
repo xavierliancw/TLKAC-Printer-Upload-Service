@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace TLKAC_Printer_Upload_Service
+namespace TLKAC_CIRRUS_Upload_Service
 {
     class TicketParser
     {

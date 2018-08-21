@@ -1,6 +1,6 @@
 ﻿using System.ServiceProcess;
 
-namespace TLKAC_Printer_Upload_Service
+namespace TLKAC_CIRRUS_Upload_Service
 {
     static class Program
     {
