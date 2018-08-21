@@ -6,7 +6,7 @@ namespace TLKAC_CIRRUS_Upload_Service
 {
     class TicketParser
     {
-        public static Ticket Parse(FileStream file, FileInfo info)
+        public static Ticket Parse(FileStream file, FileInfo info, SVCFirebase loggingSvc)
         {
             try
             {
@@ -37,13 +37,13 @@ namespace TLKAC_CIRRUS_Upload_Service
                 }
                 catch (Exception e)
                 {
-                    Service1.LogEvent("TicketParserError: " + e.Message);
+                    loggingSvc.LogEvent("TicketParserError: " + e.Message);
                 }
                 return new Ticket { OrderNumber = orderNumStr, OrderKind = kind, Timestamp = date };
             }
             catch (Exception e)
             {
-                Service1.LogEvent("TicketParser Error: " + e.Message);
+                loggingSvc.LogEvent("TicketParser Error: " + e.Message);
             }
             return null;
         }

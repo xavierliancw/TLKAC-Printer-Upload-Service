@@ -7,7 +7,7 @@ namespace TLKAC_CIRRUS_Upload_Service
 {
     class CredentialsManager
     {
-        public static Credentials GetCreds()
+        public static Credentials GetCreds(SVCFirebase loggingSVC)
         {
             var path = GetCredDocPath();
 
@@ -25,7 +25,7 @@ namespace TLKAC_CIRRUS_Upload_Service
                 }
                 catch (Exception e)
                 {
-                    Service1.LogEvent("Couldn't create cred file because: " + e.Message);
+                    loggingSVC.LogEvent("Couldn't create cred file because: " + e.Message);
                     return null;
                 }
             }
@@ -43,7 +43,7 @@ namespace TLKAC_CIRRUS_Upload_Service
             }
             catch (Exception e)
             {
-                Service1.LogEvent("Couldn't read cred file because: " + e.Message);
+                loggingSVC.LogEvent("Couldn't read cred file because: " + e.Message);
                 return null;
             }
         }

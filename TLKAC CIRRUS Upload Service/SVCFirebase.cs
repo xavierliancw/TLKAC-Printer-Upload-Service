@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Firebase.Storage;
 using Firebase.Auth;
 using System.Threading;
+using System.Net;
 
 namespace TLKAC_CIRRUS_Upload_Service
 {
@@ -51,6 +52,60 @@ namespace TLKAC_CIRRUS_Upload_Service
             }
         }
 
+        public void LogEvent(string message)
+        {
+            WebRequest req = WebRequest.Create("https://us-central1-tlkac-api.cloudfunctions.net/log");
+            req.Method = "POST";
+            req.ContentType = "application/json";
+            using (var streamWriter = new StreamWriter(req.GetRequestStream()))
+            {
+                string json = "{\"timestamp\":\"" + DateTime.Now.ToString() + "\"," +
+                              "\"log\":\"" + credEmail + " logged: " + message + "\"}";
+                streamWriter.Write(json);
+                streamWriter.Flush();
+                streamWriter.Close();
+            }
+            //Fire and forget
+            ThreadPool.QueueUserWorkItem(o => {
+                try
+                {
+                    req.GetResponse();
+                }
+                catch
+                {
+                    return;  //Whatever don't do anything (fire and forget)
+                }
+            });
+        }
+
+        public void SendHeartBeat()
+        {
+            WebRequest req = WebRequest.Create("https://us-central1-tlkac-api.cloudfunctions.net/hearbeat");
+            req.Method = "POST";
+            req.ContentType = "application/json";
+            using (var streamWriter = new StreamWriter(req.GetRequestStream()))
+            {
+                string json = "{\"service\":\"" + "uploadService" + "\"," +
+                                "\"localTime\":\"" + DateTime.Now.ToString() + "\"," +
+                                "\"account\":\"" + credEmail + "\"}";
+                streamWriter.Write(json);
+                streamWriter.Flush();
+                streamWriter.Close();
+            }
+            //Fire and forget 
+            ThreadPool.QueueUserWorkItem(o =>
+            {
+                try
+                {
+                    req.GetResponse();
+                }
+                catch
+                {
+                    return; //Forget
+                }
+            });
+        }
+
         public async Task<bool> UploadAsync(FileStream file, FileInfo info, string rename = null,
             string directory = "", bool reauthRetry = false)
         {
@@ -93,13 +148,13 @@ namespace TLKAC_CIRRUS_Upload_Service
             {
                 if (e.Message.Contains("Permission denied") && !reauthRetry)
                 {
-                    Service1.LogEvent("Reauthenticating");
+                    LogEvent("Reauthenticating");
                     await AuthenticateAsync();
                     return await UploadAsync(file, info, rename, directory, true);
                 }
                 else
                 {
-                    Service1.LogEvent("Upload failed: " + e.Message);
+                    LogEvent("Upload failed: " + e.Message);
                 }
                 return false;
             }

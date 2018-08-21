@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -19,6 +18,7 @@ namespace TLKAC_CIRRUS_Upload_Service
         private LinkedList<FileInfo> files = null;
         private SVCFirebase svc = null;
         private string currentAccount = null;
+        private System.Timers.Timer timer = null;
 
         public Service1()
         {
@@ -30,19 +30,10 @@ namespace TLKAC_CIRRUS_Upload_Service
             OnStart(null);
         }
 
-        public static void LogEvent(string message)
-        {
-            string eventSource = "TLKAC File Upload Service";
-            DateTime dt = new DateTime();
-            dt = DateTime.UtcNow;
-            message = dt.ToLocalTime() + ": " + message;
-            EventLog.WriteEntry(eventSource, message);
-        }
-
         protected override void OnStart(string[] args)
         {
             //Grab those creds
-            var creds = CredentialsManager.GetCreds();
+            var creds = CredentialsManager.GetCreds(loggingSVC: svc);
             currentAccount = creds.Email;
 
             //Start up Firebase service
@@ -59,6 +50,14 @@ namespace TLKAC_CIRRUS_Upload_Service
 
             //Start watching
             folderWatcher.EnableRaisingEvents = true;
+
+            //Start the heartbeat
+            timer = new System.Timers.Timer
+            {
+                Interval = 1000 * 60 * 60   //Every hour
+            };
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(SendHeartbeat);
+            timer.Start();
         }
 
         protected override void OnStop()
@@ -168,12 +167,12 @@ namespace TLKAC_CIRRUS_Upload_Service
                 try
                 {
                     file.Close();
-                    ticketInfo = TicketParser.Parse(file, info);
+                    ticketInfo = TicketParser.Parse(file, info, loggingSvc: svc);
                     file = File.Open(info.FullName, FileMode.Open);
                 }
                 catch (Exception e)
                 {
-                    LogEvent("ProcessAsync could not reopen file because: " + e.Message);
+                    svc.LogEvent("ProcessAsync could not reopen file because: " + e.Message);
                 }
                 if (ticketInfo != null)
                 {
@@ -193,7 +192,7 @@ namespace TLKAC_CIRRUS_Upload_Service
                     //This is an error case, but I still want to see the file get uploaded
                     var guidTitle = Guid.NewGuid();
                     shouldDelete = await svc.UploadAsync(file, info, rename: guidTitle + ".txt");  //At this point it had to be either a .SHD or .SPL file... Sometimes .SHDs get converted to .SPLs and I don't know why. (That kills the ticket parser)
-                    LogEvent("Null ticket info for " + info.Name + ", uploaded as " + guidTitle + ".txt");
+                    svc.LogEvent("Null ticket info for " + info.Name + ", uploaded as " + guidTitle + ".txt" + " with size (bytes): " + info.Length.ToString());
                 }
             }
             if (info.Extension == ".SHD")
@@ -234,6 +233,11 @@ namespace TLKAC_CIRRUS_Upload_Service
             {
                 return null;
             }
+        }
+
+        private void SendHeartbeat(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            svc.SendHeartBeat();
         }
     }
 }
