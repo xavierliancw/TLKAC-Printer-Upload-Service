@@ -59,7 +59,7 @@ namespace TLKAC_CIRRUS_Upload_Service
             req.ContentType = "application/json";
             using (var streamWriter = new StreamWriter(req.GetRequestStream()))
             {
-                string json = "{\"timestamp\":\"" + DateTime.Now.ToString() + "\"," +
+                string json = "{\"date\":\"" + DateTime.Now.ToString() + "\"," +
                               "\"log\":\"" + credEmail + " logged: " + message + "\"}";
                 streamWriter.Write(json);
                 streamWriter.Flush();
@@ -83,11 +83,19 @@ namespace TLKAC_CIRRUS_Upload_Service
             WebRequest req = WebRequest.Create("https://us-central1-tlkac-api.cloudfunctions.net/hearbeat");
             req.Method = "POST";
             req.ContentType = "application/json";
+
+            //Can't log ".com" because the database can't have periods in the key, so only take first part of email
+            var splitEmail = credEmail.Split('@');
+            var userFromEmail = "UNKNOWN_USER";
+            if (splitEmail.Length > 0)
+            {
+                userFromEmail = splitEmail[0];
+            }
             using (var streamWriter = new StreamWriter(req.GetRequestStream()))
             {
                 string json = "{\"service\":\"" + "uploadService" + "\"," +
                                 "\"localTime\":\"" + DateTime.Now.ToString() + "\"," +
-                                "\"account\":\"" + credEmail + "\"}";
+                                "\"account\":\"" + userFromEmail + "\"}";
                 streamWriter.Write(json);
                 streamWriter.Flush();
                 streamWriter.Close();

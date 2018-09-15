@@ -100,7 +100,7 @@ namespace TLKAC_CIRRUS_Upload_Service
                         while (currentFile == null && attemptCount < attemptLimit)
                         {
                             attemptCount += 1;
-                            Thread.Sleep(1000); //Wait a sec because if not, then this program'll sometimes delete the data before it can actually make it to the printer
+                            Thread.Sleep(3000); //Wait a bit because if not, then this program'll sometimes delete the data before it can actually make it to the printer
                             currentFile = TryToOpen(files.First.Value.FullName);
                             if (currentFile == null)
                             {
@@ -161,7 +161,11 @@ namespace TLKAC_CIRRUS_Upload_Service
             }
             var shouldDelete = false;
 
-            if (info.Extension == ".SPL")
+            if (info.Length < 3)
+            {
+                shouldDelete = true;    //Don't even bother with tiny files. Sometimes random 1 byte files make it to the spool file, so just throw them away
+            }
+            else if (info.Extension == ".SPL")
             {
                 Ticket ticketInfo = null;
                 try
@@ -183,8 +187,9 @@ namespace TLKAC_CIRRUS_Upload_Service
                         var ticketTime = (DateTime)ticketInfo.Timestamp;
                         uploadDirectory = ticketTime.ToString("yyyy/MM/dd");
                     }
+                    //Delete if upload is successful
                     shouldDelete = await svc.UploadAsync(file, info,
-                        rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".SPL",
+                        rename: ticketInfo.OrderNumber + "_" + ticketInfo.OrderKind + ".txt",   //Change extension to .txt to make life easier
                         directory: uploadDirectory);
                 }
                 else
@@ -195,9 +200,9 @@ namespace TLKAC_CIRRUS_Upload_Service
                     svc.LogEvent("Null ticket info for " + info.Name + ", uploaded as " + guidTitle + ".txt" + " with size (bytes): " + info.Length.ToString());
                 }
             }
-            if (info.Extension == ".SHD")
+            else if (info.Extension == ".SHD")
             {
-                shouldDelete = true;
+                shouldDelete = true;    //Delete all .SHD no matter so the computer's spool folder doesn't get gunked up
             }
             file.Close();
 
