@@ -59,7 +59,7 @@ namespace TLKAC_CIRRUS_Upload_Service
             req.ContentType = "application/json";
             using (var streamWriter = new StreamWriter(req.GetRequestStream()))
             {
-                string json = "{\"date\":\"" + DateTime.Now.ToString() + "\"," +
+                string json = "{\"timestamp\":\"" + DateTime.Now.ToString() + "\"," +
                               "\"log\":\"" + credEmail + " logged: " + message + "\"}";
                 streamWriter.Write(json);
                 streamWriter.Flush();

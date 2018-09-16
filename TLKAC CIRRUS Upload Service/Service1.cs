@@ -72,7 +72,7 @@ namespace TLKAC_CIRRUS_Upload_Service
 
         private void OnChangedEvent(object sender, FileSystemEventArgs e)
         {
-            //FileSystemWatcher will fire the event multiple times, so this bool limits it
+            //FileSystemWatcher will fire the event multiple times even for just one file, so this bool limits it
             if (!IsBusy())
             {
                 SetBusy(true);
@@ -126,7 +126,7 @@ namespace TLKAC_CIRRUS_Upload_Service
                         Thread.Sleep(1000);
                         if (SVCFirebase.ThereIsInternet())  //Oh, but don't keep retrying if there's no internet
                         {
-                            OnChangedEvent(null, null);
+                            OnChangedEvent(null, null); //Recursive call again
                         }
                     }
                 }).Start();
